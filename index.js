@@ -35,7 +35,7 @@ async function run() {
         const reviewCollection = client.db("homezDb").collection("reviews");
         const userCollection = client.db("homezDb").collection("users");
         const wishCollection = client.db("homezDb").collection("wishes");
-        const makeOfferCollection = client.db("homezDb").collection("makeOffer");
+        const makeOfferCollection = client.db("homezDb").collection("makeOffer")
 
           // jwt related api
           app.post('/jwt', async (req, res) => {
