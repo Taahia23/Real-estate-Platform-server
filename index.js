@@ -34,7 +34,7 @@ async function run() {
         const propertyCollection = client.db("homezDb").collection("property");
         const reviewCollection = client.db("homezDb").collection("reviews");
         const userCollection = client.db("homezDb").collection("users");
-        const wishCollection = client.db("homezDb").collection("wishes");
+        const wishCollection = client.db("homezDb").collection("wishes")
         const makeOfferCollection = client.db("homezDb").collection("makeOffer");
 
           // jwt related api
@@ -114,7 +114,7 @@ async function run() {
         app.post('/users', async (req, res) => {
             const user = req.body;
 
-            const query = { email: user.email }
+            const query = { email: user.email };
             const existingUser = await userCollection.findOne(query)
 
             if (existingUser) {
