@@ -141,7 +141,7 @@ async function run() {
         // make agent
         app.patch('/users/agent/:id', async (req, res) => {
             const id = req.params.id;
-            const filter = { _id: new ObjectId(id) };
+            const filter = { _id: new ObjectId(id) }
             const updatedDoc = {
                 $set: {
                     role: 'agent'
