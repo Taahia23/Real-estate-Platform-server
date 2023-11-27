@@ -57,7 +57,7 @@ async function run() {
                     return res.status(401).send({ message: 'unauthorized access' })
                 }
                 req.decoded = decoded;
-                next();
+                next()
             }
             )
             // next()
