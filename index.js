@@ -33,12 +33,13 @@ async function run() {
         // await client.connect();
         const propertyCollection = client.db("homezDb").collection("property");
         const reviewCollection = client.db("homezDb").collection("reviews");
+        const userReviewCollection = client.db("homezDb").collection("userReview");
         const userCollection = client.db("homezDb").collection("users");
         const wishCollection = client.db("homezDb").collection("wishes");
         const makeOfferCollection = client.db("homezDb").collection("makeOffer");
 
-          // jwt related api
-          app.post('/jwt', async (req, res) => {
+        // jwt related api
+        app.post('/jwt', async (req, res) => {
             const user = req.body;
             const token = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '1h' });
             res.send({ token });
@@ -64,18 +65,18 @@ async function run() {
         }
 
 
-           // use verify admin after verify token
-           const verifyAdmin = async (req, res, next) => {
+        // use verify admin after verify token
+        const verifyAdmin = async (req, res, next) => {
             const email = req.decoded.email;
-            const query = {email : email};
+            const query = { email: email };
             const user = await userCollection.findOne(query);
-            const isAdmin =  user?.role === 'admin';
-            if(!isAdmin){
+            const isAdmin = user?.role === 'admin';
+            if (!isAdmin) {
                 return res.status(403).send({ message: 'forbidden access' })
             }
             next()
         }
-         // middlewares
+        // middlewares
 
 
         // all Properties
@@ -83,12 +84,13 @@ async function run() {
             const result = await propertyCollection.find().toArray();
             res.send(result)
         })
+       
         // all Properties
 
 
         // users related api
-        app.get('/users', verifyToken,verifyAdmin, async (req, res) => {
-            
+        app.get('/users', verifyToken, verifyAdmin, async (req, res) => {
+
             const result = await userCollection.find().toArray();
             res.send(result)
         });
@@ -108,6 +110,23 @@ async function run() {
             res.send({ admin })
         })
 
+        // eita kintu extra
+        app.get('/users/agent/:email', verifyToken, async (req, res) => {
+            const email = req.params.email;
+            if (email !== req.decoded.email) {
+                return res.status(403).send({ message: 'unauthorized access' })
+            }
+            const query = { email: email };
+            const user = await userCollection.findOne(query);
+            let agent = false;
+            if (user) {
+                agent = user?.role === 'agent'
+            }
+
+            res.send({ agent })
+        })
+        // eita kintu extra
+
 
 
 
@@ -126,7 +145,7 @@ async function run() {
         });
 
         // make admin
-        app.patch('/users/admin/:id',verifyToken,verifyAdmin,  async (req, res) => {
+        app.patch('/users/admin/:id', verifyToken, verifyAdmin, async (req, res) => {
             const id = req.params.id;
             const filter = { _id: new ObjectId(id) }
             const updatedDoc = {
@@ -152,7 +171,7 @@ async function run() {
         })
         // make agent
 
-        app.delete('/users/:id',verifyToken,verifyAdmin, async (req, res) => {
+        app.delete('/users/:id', verifyToken, verifyAdmin, async (req, res) => {
             const id = req.params.id;
             const query = { _id: new ObjectId(id) }
             const result = await userCollection.deleteOne(query);
@@ -178,6 +197,20 @@ async function run() {
             res.send(result)
         });
         //  reviews data load
+
+        // user review api
+        app.get('/reviews', async (req, res) => {
+            const result = await userReviewCollection.find().toArray();
+            res.send(result)
+        });
+
+        app.post('/userReview', async (req, res) => {
+            const wishItem = req.body;
+            const result = await userReviewCollection.insertOne(wishItem);
+            res.send(result);
+        })
+
+        // user review api
 
         // wishlist related api
 
@@ -210,15 +243,28 @@ async function run() {
             const query = { _id: new ObjectId(id) };
 
             const options = {
-                projection: { priceRange: 1, propertyTitle: 1, agentName: 1, location: 1 },
+                projection: {
+                    priceRange: 1, propertyTitle: 1, agentName: 1, location: 1, propertyImg: 1
+                },
             };
             const result = await propertyCollection.findOne(query, options);
+            // console.log(216,query, result);
             res.send(result);
         })
+        // uncomment this if below get method does not work
+
+        // app.get('/makeOffer', async (req, res) => {
+        //     // const query = { email: req.query.email }
+
+        //     const result = await makeOfferCollection.find().toArray();
+        //     res.send(result)
+        // })
+        // uncomment this if below get method does not work
 
         app.get('/makeOffer', async (req, res) => {
-            query = { email: req.query.email }
-            const result = await makeOfferCollection.find(query).toArray();
+            const email = req.query.email;
+            const query = { email: email }
+            const result = await makeOfferCollection.find(query).toArray()
             res.send(result)
         })
 
@@ -230,6 +276,54 @@ async function run() {
 
         })
         // make an offer
+
+        // add property related api
+        app.post('/property', async (req, res) => {
+            const item = req.body;
+            const result = await propertyCollection.insertOne(item);
+            res.send(result)
+        })
+        app.delete('/property/:id', async (req, res) => {
+            const id = req.params.id;
+            const query = { _id: new ObjectId(id) };
+            const result = await propertyCollection.deleteOne(query);
+            res.send(result)
+        })
+        // add property related api
+        // update property api
+        app.patch('/property/:id', async (req, res) => {
+            const item = req.body;
+            const id = req.params.id;
+            const filter =  { _id: new ObjectId(id) };
+            const updatedDoc ={
+                $set: {
+                    propertyTitle: item.propertyTitle,
+                    propertyImg: item.propertyImg,
+                    location: item.location,
+                    priceRange: item.priceRange,
+                    agentName: item.agentName,
+                    agentEmail: item.agentEmail,
+                }
+            }
+            const result =await propertyCollection.updateOne(filter, updatedDoc);
+            res.send(result)
+        })
+        // update property api
+
+
+        // search button in all properties
+        // app.get('/property', async(req, res) => {
+        //     // const { propertyTitle } = req.query;
+        //     query = { propertyTitle: req.query.propertyTitle }
+
+
+        //     const filteredProperties = await propertyCollection.filter(property =>
+        //       property.propertyTitle.toLowerCase().includes(propertyTitle.toLowerCase())
+        //     );
+
+        //     res.send(filteredProperties);
+        //   });
+        // search button in all properties
 
 
 
